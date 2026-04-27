@@ -1,0 +1,92 @@
+#!/bin/bash
+set -euxo pipefail
+exec > >(tee /var/log/gemma-bootstrap.log) 2>&1
+
+echo "=== [1/6] Wait for apt locks ==="
+while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 3; done
+apt-get update
+
+echo "=== [2/6] Install Docker ==="
+if ! command -v docker &>/dev/null; then
+  apt-get install -y ca-certificates curl gnupg
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  chmod a+r /etc/apt/keyrings/docker.asc
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+    | tee /etc/apt/sources.list.d/docker.list >/dev/null
+  apt-get update
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+fi
+usermod -aG docker ubuntu
+
+echo "=== [3/6] Install Ollama ==="
+curl -fsSL https://ollama.com/install.sh | sh
+
+mkdir -p /etc/systemd/system/ollama.service.d
+cat > /etc/systemd/system/ollama.service.d/override.conf <<EOF
+[Service]
+Environment="OLLAMA_HOST=0.0.0.0"
+Environment="OLLAMA_KEEP_ALIVE=24h"
+EOF
+systemctl daemon-reload
+systemctl restart ollama
+
+echo "=== Wait for Ollama to be ready ==="
+for i in {1..30}; do
+  if curl -sf http://localhost:11434/api/tags >/dev/null; then break; fi
+  sleep 2
+done
+
+echo "=== [4/6] Pull model ${model_name} (this will take several minutes) ==="
+export HOME=/root
+ollama pull ${model_name}
+
+echo "=== [5/6] Start Open WebUI ==="
+for i in 1 2 3; do
+  if timeout 600 docker pull ghcr.io/open-webui/open-webui:main; then break; fi
+  echo "docker pull attempt $i failed, retrying..."
+  sleep 5
+done
+
+docker run -d \
+  --name open-webui \
+  --restart unless-stopped \
+  -p 127.0.0.1:3000:8080 \
+  --add-host=host.docker.internal:host-gateway \
+  -v open-webui:/app/backend/data \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+  -e WEBUI_NAME="${webui_title}" \
+  -e DEFAULT_MODELS="${model_name}" \
+  ghcr.io/open-webui/open-webui:main
+
+echo "=== [6/6] Install Caddy + configure HTTPS ==="
+apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+  | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+  | tee /etc/apt/sources.list.d/caddy-stable.list
+apt-get update
+apt-get install -y caddy
+
+cat > /etc/caddy/Caddyfile <<EOF
+{
+  email ${admin_email}
+}
+
+${domain} {
+  reverse_proxy 127.0.0.1:3000
+
+  encode gzip
+
+  header {
+    Strict-Transport-Security "max-age=31536000"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "no-referrer"
+  }
+}
+EOF
+
+systemctl restart caddy
+systemctl enable caddy
+
+echo "=== Bootstrap complete. Open WebUI will be reachable at https://${domain} once the model download finishes. ==="

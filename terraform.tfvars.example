@@ -1,0 +1,14 @@
+region            = "eu-west-1"
+# AWS CLI profile to use — omit or set to null for default credentials
+# aws_profile     = "myprofile"
+instance_type     = "g5.2xlarge"
+use_spot          = false
+model_name        = "gemma4:26b"
+webui_title       = "Gemma 4 Demo"
+
+# Your public IP for SSH — find with: curl ifconfig.me
+# Must be in CIDR form with /32
+allowed_ssh_cidr  = "203.0.113.42/32"
+
+# Real email — Let's Encrypt uses it for cert-expiry notifications
+admin_email       = "you@example.com"
