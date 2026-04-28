@@ -11,9 +11,9 @@ variable "aws_profile" {
 }
 
 variable "instance_type" {
-  description = "GPU instance type. g5.2xlarge gives 32GB RAM (vs 16GB on g5.xlarge), which avoids page-cache thrashing during the 17GB model verify."
+  description = "GPU instance type. g5.xlarge = 4 vCPU / 16GB RAM (cheapest, needs swap during model verify). g5.2xlarge = 8 vCPU / 32GB RAM (smoother)."
   type        = string
-  default     = "g5.2xlarge"
+  default     = "g5.xlarge"
 }
 
 variable "use_spot" {
@@ -48,6 +48,19 @@ variable "webui_title" {
 variable "admin_email" {
   description = "Email used for Let's Encrypt registration"
   type        = string
+}
+
+variable "ollama_basic_auth_user" {
+  description = "Username for Basic Auth on /ollama/* endpoint. Leave null to disable the public Ollama API entirely (use SSH tunnel instead)."
+  type        = string
+  default     = null
+}
+
+variable "ollama_basic_auth_password" {
+  description = "Plaintext password for Basic Auth on /ollama/*. Bootstrap converts it to a bcrypt hash before writing the Caddyfile."
+  type        = string
+  sensitive   = true
+  default     = null
 }
 
 variable "project_name" {

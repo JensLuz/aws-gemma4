@@ -26,10 +26,12 @@ locals {
   public_domain = "${replace(aws_eip.gemma.public_ip, ".", "-")}.sslip.io"
 
   user_data = templatefile("${path.module}/user_data.sh.tftpl", {
-    model_name  = var.model_name
-    webui_title = var.webui_title
-    domain      = local.public_domain
-    admin_email = var.admin_email
+    model_name     = var.model_name
+    webui_title    = var.webui_title
+    domain         = local.public_domain
+    admin_email    = var.admin_email
+    ollama_user     = var.ollama_basic_auth_user == null ? "" : var.ollama_basic_auth_user
+    ollama_password = var.ollama_basic_auth_password == null ? "" : var.ollama_basic_auth_password
   })
 }
 
@@ -46,8 +48,8 @@ resource "aws_instance" "gemma" {
   root_block_device {
     volume_size = var.root_volume_size
     volume_type = "gp3"
-    iops        = 3000
-    throughput  = 500
+    iops        = 6000
+    throughput  = 1000
     encrypted   = true
   }
 

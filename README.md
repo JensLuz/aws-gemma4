@@ -11,7 +11,7 @@ Stands up a single EC2 GPU instance running:
 
 - [OpenTofu](https://opentofu.org) 1.6+ (`tofu --version`)
 - AWS CLI configured (`aws sts get-caller-identity`)
-- A service quota allowing `g5.2xlarge` in your chosen region — needs 8 vCPUs of "Running On-Demand G and VT instances" (request via AWS console if needed)
+- A service quota allowing `g5.xlarge` in your chosen region — needs 4 vCPUs of "Running On-Demand G and VT instances" (request via AWS console if needed)
 
 ## Deploy
 
@@ -58,10 +58,10 @@ Deletes the instance, EIP, security group, and keypair. **~$0 residual cost.**
 
 ## Cost
 
-- `g5.2xlarge` on-demand: ~$1.21/hr (32 GB RAM — recommended, avoids verify thrashing)
-- `g5.xlarge` on-demand: ~$1.00/hr (16 GB RAM — works but model verify is slow)
+- `g5.xlarge` on-demand: ~$1.00/hr (4 vCPU / 16GB RAM, default — uses 16GB swap to handle model verify)
+- `g5.2xlarge` on-demand: ~$1.21/hr (8 vCPU / 32GB RAM, smoother but needs higher quota)
 - Spot (`use_spot = true`): ~70% cheaper
-- 100 GB gp3 @ 500 MB/s throughput: ~$13/month prorated
+- 100 GB gp3 @ 1000 MB/s / 6000 IOPS: ~$18/month prorated
 - Data transfer: negligible for a demo
 
 Short-lived demos cost a few dollars. Don't forget `tofu destroy`.

@@ -1,7 +1,7 @@
-region            = "eu-west-1"
+region            = "eu-central-1"
 # AWS CLI profile to use — omit or set to null for default credentials
 # aws_profile     = "myprofile"
-instance_type     = "g5.2xlarge"
+instance_type     = "g5.xlarge"
 use_spot          = false
 model_name        = "gemma4:26b"
 webui_title       = "Gemma 4 Demo"
@@ -12,3 +12,8 @@ allowed_ssh_cidr  = "203.0.113.42/32"
 
 # Real email — Let's Encrypt uses it for cert-expiry notifications
 admin_email       = "you@example.com"
+
+# Optional — expose Ollama API at https://<domain>/ollama behind Basic Auth.
+# Leave both unset to keep Ollama private (use SSH tunnel from your client instead).
+# ollama_basic_auth_user     = "opencode"
+# ollama_basic_auth_password = "pick-a-strong-password"

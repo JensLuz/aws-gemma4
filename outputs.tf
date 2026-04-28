@@ -19,6 +19,13 @@ output "tail_bootstrap_log" {
 }
 
 output "estimated_hourly_cost_usd" {
-  description = "Rough on-demand cost (EU regions, g5.2xlarge). Spot is ~70% cheaper."
-  value       = var.use_spot ? "~$0.36/hr (spot)" : "~$1.21/hr (on-demand)"
+  description = "Rough on-demand cost (EU regions, g5.xlarge). Spot is ~70% cheaper."
+  value       = var.use_spot ? "~$0.30/hr (spot)" : "~$1.00/hr (on-demand)"
 }
+
+output "ollama_api_url" {
+  description = "Public Ollama API endpoint (Basic Auth)."
+  value       = "https://${local.public_domain}/ollama"
+}
+
+
